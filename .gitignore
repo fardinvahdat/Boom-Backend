@@ -1,0 +1,59 @@
+# Byte-compiled Python files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.env
+.env.example
+.env.local
+.env.test
+.env.production
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# FastAPI specific
+static/
+uploads/
+media/
+logs/
+requirements.txt
+
+# Test and coverage files
+.coverage
+.cache
+.htmlcov
+.pytest_cache/
+pytest.ini
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Documentation
+docs/_build/
+site/
+
+# Database files
+*.db
+*.sqlite3
+
+# Log files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Package files
+package-lock.json
+yarn.lock
+.pnp.js
