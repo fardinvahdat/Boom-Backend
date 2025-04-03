@@ -8,7 +8,7 @@ import cv2
 import numpy as np
 import torch
 from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, status, Request
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordBearer
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse, JSONResponse
 from jose import JWTError, jwt
@@ -22,7 +22,8 @@ from databases import Database
 from RRDBNet_arch import RRDBNet
 
 # ====================== DATABASE SETUP ======================
-DATABASE_URL = "postgresql://esrgan_user:thisIsFardin77@localhost:5432/esrgan_db"  # Update with your credentials
+# Update with your credentials
+DATABASE_URL = "postgresql://esrgan_user:thisIsFardin77@localhost:5432/esrgan_db"
 
 # SQLAlchemy setup
 engine = create_engine(DATABASE_URL)
@@ -40,6 +41,8 @@ except Exception as e:
 database = Database(DATABASE_URL)
 
 # ====================== DATABASE MODELS ======================
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -49,6 +52,7 @@ class User(Base):
     hashed_password = Column(String)
     disabled = Column(Boolean, default=False)
     google_id = Column(String, nullable=True)
+
 
 # Create tables
 Base.metadata.create_all(bind=engine)
@@ -64,16 +68,21 @@ GOOGLE_CLIENT_SECRET = "your-google-client-secret"
 GOOGLE_REDIRECT_URI = "http://localhost:8001/auth/google/callback"
 
 # ====================== PYDANTIC MODELS ======================
+
+
 class UserBase(BaseModel):
     email: EmailStr
     full_name: Optional[str] = Field(None, min_length=2, max_length=50)
 
+
 class UserCreate(UserBase):
     password: str = Field(..., min_length=8, max_length=50)
+
 
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
 
 class UserInDB(UserBase):
     id: int
@@ -84,21 +93,27 @@ class UserInDB(UserBase):
     class Config:
         from_attributes = True
 
+
 class Token(BaseModel):
     access_token: str
     token_type: str
+
 
 # ====================== AUTH UTILITIES ======================
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
+
 
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 # Database dependency
+
+
 def get_db():
     db = SessionLocal()
     try:
@@ -106,17 +121,20 @@ def get_db():
     finally:
         db.close()
 
+
 async def get_user(db: Session, email: str) -> Optional[UserInDB]:
     user = db.query(User).filter(User.email == email).first()
     if user:
         return UserInDB.from_orm(user)
     return None
 
-async def authenticate_user(db: Session, email: str, password: str) -> Optional[UserInDB]:
-    user = await get_user(db, email)
+
+async def authenticate_user(db: Session, username: str, password: str):
+    user = await User.get_by_username(db, username)
     if not user or not verify_password(password, user.hashed_password):
         return None
     return user
+
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
@@ -126,6 +144,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
         expire = datetime.utcnow() + timedelta(minutes=15)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
 
 async def get_current_user(
     db: Session = Depends(get_db),
@@ -143,7 +162,7 @@ async def get_current_user(
             raise credentials_exception
     except JWTError:
         raise credentials_exception
-    
+
     user = await get_user(db, email)
     if user is None:
         raise credentials_exception
@@ -163,20 +182,26 @@ app.add_middleware(
 # Initialize ESRGAN model
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = RRDBNet(3, 3, 64, 23, gc=32)
-model.load_state_dict(torch.load('models/RRDB_ESRGAN_x4.pth', map_location=device))
+model.load_state_dict(torch.load(
+    'models/RRDB_ESRGAN_x4.pth', map_location=device))
 model.eval()
 model = model.to(device)
 
 # Database connection events
+
+
 @app.on_event("startup")
 async def startup():
     await database.connect()
+
 
 @app.on_event("shutdown")
 async def shutdown():
     await database.disconnect()
 
 # ====================== ROUTES ======================
+
+
 @app.post("/register", response_model=UserInDB)
 async def register_user(user: UserCreate, db: Session = Depends(get_db)):
     db_user = await get_user(db, user.email)
@@ -185,7 +210,7 @@ async def register_user(user: UserCreate, db: Session = Depends(get_db)):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered"
         )
-    
+
     hashed_password = get_password_hash(user.password)
     db_user = User(
         email=user.email,
@@ -196,6 +221,7 @@ async def register_user(user: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_user)
     return db_user
+
 
 @app.post("/login", response_model=Token)
 async def login(
@@ -209,13 +235,14 @@ async def login(
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user.email},
         expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
 
 @app.get("/auth/google")
 async def google_login():
@@ -224,6 +251,7 @@ async def google_login():
         f"&redirect_uri={GOOGLE_REDIRECT_URI}&scope=openid%20email%20profile&access_type=offline",
         status_code=302
     )
+
 
 @app.get("/auth/google/callback")
 async def google_callback(
@@ -243,14 +271,14 @@ async def google_callback(
             }
         )
         tokens = token_response.json()
-        
+
         # Get user info
         userinfo = await client.get(
             "https://www.googleapis.com/oauth2/v1/userinfo",
             headers={"Authorization": f"Bearer {tokens['access_token']}"}
         )
         userinfo = userinfo.json()
-        
+
         # Create or update user
         user = db.query(User).filter(User.email == userinfo["email"]).first()
         if not user:
@@ -263,16 +291,17 @@ async def google_callback(
             db.add(user)
             db.commit()
             db.refresh(user)
-        
+
         # Generate JWT
         access_token = create_access_token(
             data={"sub": userinfo["email"]},
             expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         )
-        
+
         return JSONResponse(
             content={"access_token": access_token, "token_type": "bearer"}
         )
+
 
 @app.post("/enhance/")
 async def enhance_image(
@@ -281,32 +310,35 @@ async def enhance_image(
 ):
     temp_path = f"temp_{uuid.uuid4()}.jpg"
     result_path = f"enhanced_{uuid.uuid4()}.png"
-    
+
     try:
         # Save uploaded file
         with open(temp_path, "wb") as buffer:
             buffer.write(await file.read())
-        
+
         # Process image
         img = cv2.imread(temp_path, cv2.IMREAD_COLOR)
         img = img * 1.0 / 255
-        img = torch.from_numpy(np.transpose(img[:, :, [2, 1, 0]], (2, 0, 1))).float()
+        img = torch.from_numpy(np.transpose(
+            img[:, :, [2, 1, 0]], (2, 0, 1))).float()
         img_LR = img.unsqueeze(0).to(device)
-        
+
         with torch.no_grad():
-            output = model(img_LR).data.squeeze().float().cpu().clamp_(0, 1).numpy()
-        
+            output = model(img_LR).data.squeeze(
+            ).float().cpu().clamp_(0, 1).numpy()
+
         output = np.transpose(output[[2, 1, 0], :, :], (1, 2, 0))
         output = (output * 255.0).round().astype(np.uint8)
         cv2.imwrite(result_path, output)
-        
+
         return FileResponse(result_path, media_type="image/png")
-    
+
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
         if os.path.exists(result_path):
             os.remove(result_path)
+
 
 @app.get("/me", response_model=UserInDB)
 async def read_current_user(current_user: UserInDB = Depends(get_current_user)):
@@ -314,4 +346,4 @@ async def read_current_user(current_user: UserInDB = Depends(get_current_user)):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8007)
+    uvicorn.run(app, host="0.0.0.0", port=8008)
