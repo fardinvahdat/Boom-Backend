@@ -4,7 +4,7 @@ import secrets
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "ESRGAN API"
-    DATABASE_URL: str = "postgresql://esrgan_user:thisIsFardin77@localhost:5432/esrgan_db"
+    DATABASE_URL: str = "postgresql://fardinvahdat:thisIsFardin77@localhost:5432/fardinvahdat"
     SECRET_KEY: str = secrets.token_urlsafe(32)
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30

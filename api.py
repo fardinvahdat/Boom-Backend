@@ -24,7 +24,7 @@ from RRDBNet_arch import RRDBNet
 
 # ====================== DATABASE SETUP ======================
 # Update with your credentials
-DATABASE_URL = "postgresql://esrgan_user:thisIsFardin77@localhost:5432/esrgan_db"
+DATABASE_URL = "postgresql://fardinvahdat:thisIsFardin77@localhost:5432/fardinvahdat"
 
 # SQLAlchemy setup
 engine = create_engine(DATABASE_URL)

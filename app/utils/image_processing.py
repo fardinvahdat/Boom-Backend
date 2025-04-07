@@ -9,7 +9,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # Initialize model
 model = RRDBNet(3, 3, 64, 23, gc=32)
 model.load_state_dict(torch.load(
-    'models/RRDB_ESRGAN_x4.pth', map_location=device))
+    'app/models/RRDB_ESRGAN_x4.pth', map_location=device))
 model.eval()
 model = model.to(device)
 

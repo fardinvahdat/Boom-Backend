@@ -23,7 +23,8 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db_user = User(
         email=user.email,
         full_name=user.full_name,
-        hashed_password=hashed_password
+        hashed_password=hashed_password,
+        role=user.role or "user"
     )
     db.add(db_user)
     db.commit()
