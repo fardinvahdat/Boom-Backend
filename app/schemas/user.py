@@ -1,6 +1,8 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from enum import Enum
+from typing import List
+from app.schemas.template import TemplateOut
 
 
 class UserRole(str, Enum):
@@ -13,6 +15,7 @@ class UserBase(BaseModel):
     email: EmailStr
     full_name: Optional[str] = Field(None, min_length=2, max_length=50)
     role: Optional[UserRole] = UserRole.user
+    templates: List[TemplateOut] = []
 
 
 class UserCreate(UserBase):

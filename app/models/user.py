@@ -1,9 +1,10 @@
-from sqlalchemy import Column, Integer, String, Boolean, Enum
+from sqlalchemy import Column, Integer, String, Enum
+from sqlalchemy.orm import relationship
 from app.database import Base
+import enum
+from app.models import user
 from sqlalchemy.orm import Session
-import enum  # <-- add this import
 
-# Define role choices as Enum
 
 
 class UserRole(str, enum.Enum):
@@ -17,12 +18,12 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True)
-    full_name = Column(String, nullable=True)
     hashed_password = Column(String)
-    disabled = Column(Boolean, default=False)
-    google_id = Column(String, nullable=True)
+    full_name = Column(String, nullable=True)
+    role = Column(Enum(UserRole), default=UserRole.user)
 
-    role = Column(Enum(UserRole), default=UserRole.user, nullable=False)
+    templates = relationship("Template", back_populates="creator")
+
 
 
 @classmethod
